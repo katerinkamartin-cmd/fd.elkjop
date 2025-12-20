@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="sk" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slovenské Hry: Interaktívny Prehľad</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        stone: {
+                            850: '#292524', // Custom darker stone for dark mode cards
+                            950: '#0c0a09', // Deep background
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: #1c1917; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d6d3d1; 
+            border-radius: 4px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #44403c; 
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a29e; 
+        }
+        .chart-container {
+            position: relative;
+            margin: auto;
+            height: 300px;
+            width: 100%;
+            max-width: 600px;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen transition-colors duration-300 bg-[#FDFBF7] text-[#44403C] dark:bg-stone-950 dark:text-stone-300">
+
+    <!-- Navigation / Header -->
+    <header class="bg-white/90 dark:bg-stone-900/90 backdrop-blur-sm shadow-sm border-b border-stone-200 dark:border-stone-800 sticky top-0 z-50 transition-colors duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="window.scrollTo(0,0)">
+                <span class="text-2xl">🎮</span>
+                <h1 class="text-xl font-bold text-stone-800 dark:text-stone-100 tracking-tight">SlovakGame<span class="text-amber-600">DB</span></h1>
+            </div>
+            
+            <div class="flex items-center gap-6">
+                <nav class="hidden md:flex space-x-6">
+                    <a href="#stats" class="text-stone-600 dark:text-stone-400 hover:text-amber-600 dark:hover:text-amber-500 transition-colors font-medium">Štatistiky</a>
+                    <a href="#catalog" class="text-stone-600 dark:text-stone-400 hover:text-amber-600 dark:hover:text-amber-500 transition-colors font-medium">Katalóg Hier</a>
+                    <a href="#timeline" class="text-stone-600 dark:text-stone-400 hover:text-amber-600 dark:hover:text-amber-500 transition-colors font-medium">História</a>
+                </nav>
+                
+                <div class="flex items-center gap-4">
+                    <!-- Dark Mode Toggle -->
+                    <button id="theme-toggle" class="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors text-stone-600 dark:text-amber-500" title="Prepnúť režim">
+                        <!-- Sun Icon -->
+                        <svg id="sun-icon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                        <!-- Moon Icon -->
+                        <svg id="moon-icon" class="w-6 h-6 block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                    </button>
+
+                    <!-- Author Profile -->
+                    <div class="flex items-center gap-3 pl-4 border-l border-stone-200 dark:border-stone-700">
+                        <div class="text-right hidden sm:block">
+                            <p class="text-[10px] uppercase tracking-wider text-stone-400 font-bold">Autor</p>
+                            <p class="text-sm font-bold text-stone-800 dark:text-stone-200 leading-tight">Martin Katerinka</p>
+                        </div>
+                        <div class="relative group cursor-pointer">
+                            <img src="me.jpg" onerror="this.src='https://ui-avatars.com/api/?name=Martin+Katerinka&background=d97706&color=fff'" alt="Martin Katerinka" class="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-stone-700 shadow-sm group-hover:border-amber-500 transition-colors">
+                            <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-stone-900 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow">
+        <!-- Hero Section -->
+        <section class="bg-white dark:bg-stone-900 border-b border-stone-100 dark:border-stone-800 transition-colors duration-300">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+                <span class="inline-block py-1 px-3 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-500 text-xs font-bold uppercase tracking-wider mb-4">Databáza domácej tvorby</span>
+                <h2 class="text-4xl md:text-5xl font-extrabold text-stone-800 dark:text-white mb-6 tracking-tight">
+                    Slovenský herný priemysel <br class="hidden md:block" />na svetových platformách
+                </h2>
+                <p class="max-w-2xl mx-auto text-lg text-stone-600 dark:text-stone-400 leading-relaxed mb-8">
+                    Interaktívna analýza najvýznamnejších titulov od slovenských vývojárov. 
+                    Objavte RPG, stratégie a simulátory, ktoré dobyli svetové trhy.
+                </p>
+                <div class="flex justify-center gap-4">
+                    <a href="#catalog" class="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all">
+                        Preskúmať Hry
+                    </a>
+                    <a href="#stats" class="px-6 py-3 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 font-semibold rounded-lg hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors">
+                        Zobraziť Dáta
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Analytics Section -->
+        <section id="stats" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 scroll-mt-20">
+            <div class="mb-10">
+                <h3 class="text-2xl font-bold text-stone-800 dark:text-white border-l-4 border-amber-500 pl-3">Prehľad trhu</h3>
+                <p class="mt-2 text-stone-600 dark:text-stone-400">
+                    Kvantitatívny pohľad na zastúpenie slovenských hier podľa platforiem a žánrov. 
+                </p>
+            </div>
+
+            <!-- KPI Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                <div class="bg-white dark:bg-stone-850 rounded-xl shadow-sm border border-stone-200 dark:border-stone-700 p-6 flex items-center justify-between hover:border-amber-400 dark:hover:border-amber-600 transition-all group">
+                    <div>
+                        <p class="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider group-hover:text-amber-600 transition-colors">Analyzované Hry</p>
+                        <p class="text-4xl font-bold text-stone-800 dark:text-white mt-1" id="total-games-count">0</p>
+                    </div>
+                    <div class="p-3 bg-amber-50 dark:bg-stone-800 rounded-full group-hover:bg-amber-100 dark:group-hover:bg-stone-700 transition-colors">
+                        <span class="text-3xl">📂</span>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-stone-850 rounded-xl shadow-sm border border-stone-200 dark:border-stone-700 p-6 flex items-center justify-between hover:border-amber-400 dark:hover:border-amber-600 transition-all group">
+                    <div>
+                        <p class="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider group-hover:text-amber-600 transition-colors">Top Žáner</p>
+                        <p class="text-4xl font-bold text-stone-800 dark:text-white mt-1" id="top-genre">RPG</p>
+                    </div>
+                    <div class="p-3 bg-amber-50 dark:bg-stone-800 rounded-full group-hover:bg-amber-100 dark:group-hover:bg-stone-700 transition-colors">
+                        <span class="text-3xl">⚔️</span>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-stone-850 rounded-xl shadow-sm border border-stone-200 dark:border-stone-700 p-6 flex items-center justify-between hover:border-amber-400 dark:hover:border-amber-600 transition-all group">
+                    <div>
+                        <p class="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider group-hover:text-amber-600 transition-colors">Priemerné Hodnotenie</p>
+                        <p class="text-4xl font-bold text-stone-800 dark:text-white mt-1" id="avg-score">0</p>
+                    </div>
+                    <div class="p-3 bg-amber-50 dark:bg-stone-800 rounded-full group-hover:bg-amber-100 dark:group-hover:bg-stone-700 transition-colors">
+                        <span class="text-3xl">⭐</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Platform Chart -->
+                <div class="bg-white dark:bg-stone-850 rounded-xl shadow-sm border border-stone-200 dark:border-stone-700 p-6">
+                    <h4 class="text-lg font-bold text-stone-800 dark:text-white mb-4">Podpora Platforiem</h4>
+                    <p class="text-sm text-stone-500 dark:text-stone-400 mb-6">Podiel hier dostupných na jednotlivých systémoch.</p>
+                    <div class="chart-container">
+                        <canvas id="platformChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Genre Chart -->
+                <div class="bg-white dark:bg-stone-850 rounded-xl shadow-sm border border-stone-200 dark:border-stone-700 p-6">
+                    <h4 class="text-lg font-bold text-stone-800 dark:text-white mb-4">Žánrové Rozloženie</h4>
+                    <p class="text-sm text-stone-500 dark:text-stone-400 mb-6">Počet titulov v hlavných kategóriách.</p>
+                    <div class="chart-container">
+                        <canvas id="genreChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Catalog Section -->
+        <section id="catalog" class="bg-stone-50 dark:bg-stone-950 py-16 border-t border-stone-200 dark:border-stone-800 scroll-mt-20 transition-colors duration-300">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="mb-8 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
+                    <div>
+                        <h3 class="text-2xl font-bold text-stone-800 dark:text-white border-l-4 border-amber-500 pl-3">Katalóg Hier</h3>
+                        <p class="mt-2 text-stone-600 dark:text-stone-400 max-w-xl">
+                            Kompletná databáza. Použite filtre na nájdenie konkrétneho titulu.
+                        </p>
+                    </div>
+                    
+                    <!-- Advanced Filters -->
+                    <div class="bg-white dark:bg-stone-850 p-4 rounded-xl shadow-sm border border-stone-200 dark:border-stone-700 flex flex-col md:flex-row gap-4 w-full xl:w-auto">
+                        <!-- Search -->
+                        <div class="flex flex-col flex-grow md:w-64">
+                            <label for="search-input" class="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase mb-1">Hľadať</label>
+                            <input type="text" id="search-input" placeholder="Názov hry..." class="bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-600 text-stone-800 dark:text-stone-200 text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block w-full p-2.5 transition-colors">
+                        </div>
+
+                        <!-- Platform Filter -->
+                        <div class="flex flex-col md:w-40">
+                            <label for="platform-filter" class="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase mb-1">Platforma</label>
+                            <select id="platform-filter" class="bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-600 text-stone-800 dark:text-stone-200 text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block w-full p-2.5 transition-colors">
+                                <option value="all">Všetky</option>
+                                <option value="PC">PC (Windows)</option>
+                                <option value="PS4/5">PlayStation</option>
+                                <option value="Xbox">Xbox</option>
+                                <option value="Switch">Nintendo Switch</option>
+                            </select>
+                        </div>
+
+                        <!-- Genre Filter -->
+                        <div class="flex flex-col md:w-40">
+                            <label for="genre-filter" class="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase mb-1">Žáner</label>
+                            <select id="genre-filter" class="bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-600 text-stone-800 dark:text-stone-200 text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block w-full p-2.5 transition-colors">
+                                <option value="all">Všetky</option>
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+
+                        <!-- Sort -->
+                        <div class="flex flex-col md:w-40">
+                            <label for="sort-filter" class="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase mb-1">Zoradiť</label>
+                            <select id="sort-filter" class="bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-600 text-stone-800 dark:text-stone-200 text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block w-full p-2.5 transition-colors">
+                                <option value="newest">Najnovšie</option>
+                                <option value="oldest">Najstaršie</option>
+                                <option value="rating">Najlepšie hodnotené</option>
+                                <option value="name">Podľa názvu (A-Z)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Game Grid -->
+                <div id="games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Game Cards injected via JS -->
+                </div>
+                
+                <div id="no-results" class="hidden text-center py-20">
+                    <div class="inline-block p-4 rounded-full bg-stone-200 dark:bg-stone-800 mb-4">
+                        <span class="text-4xl">🔍</span>
+                    </div>
+                    <h4 class="text-xl font-bold text-stone-800 dark:text-stone-200">Žiadne výsledky</h4>
+                    <p class="text-stone-500 dark:text-stone-400">Pre zvolené filtre sme nenašli žiadne hry. Skúste zmeniť kritériá.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Timeline Section -->
+        <section id="timeline" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 scroll-mt-20">
+            <div class="mb-8">
+                <h3 class="text-2xl font-bold text-stone-800 dark:text-white border-l-4 border-amber-500 pl-3">Časová Os Vydaní</h3>
+                <p class="mt-2 text-stone-600 dark:text-stone-400">
+                    Vývoj aktivity slovenských štúdií v čase.
+                </p>
+            </div>
+            
+            <div class="bg-white dark:bg-stone-850 rounded-xl shadow-sm border border-stone-200 dark:border-stone-700 p-6 transition-colors duration-300">
+                <div class="chart-container" style="height: 400px; max-height: 400px;">
+                    <canvas id="timelineChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-stone-900 dark:bg-black text-stone-400 py-10 border-t border-stone-800 transition-colors duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex flex-col items-center md:items-start">
+                <span class="font-bold text-stone-200 text-lg">SlovakGame<span class="text-amber-600">DB</span></span>
+                <span class="text-xs text-stone-500 mt-1">Slovenská herná databáza &copy; 2025</span>
+            </div>
+            <div class="text-sm text-center md:text-right">
+                <p>Vytvorené pre demonštráciu moderného webového dizajnu.</p>
+                <p class="text-xs text-stone-600 mt-1">Dáta sú ilustratívne a nemusia byť kompletné.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Script Logic -->
+    <script>
+        // --- DATASET ---
+        const gamesData = [
+            {
+                id: 1,
+                title: "Shadows: Awakening",
+                developer: "Games Farm",
+                year: 2018,
+                genre: "RPG",
+                platforms: ["PC", "PS4/5", "Xbox"],
+                description: "Izometrické akčné RPG s unikátnou mechanikou prepínania medzi svetom živých a mŕtvych.",
+                score: 75
+            },
+            {
+                id: 2,
+                title: "Vaporum",
+                developer: "Fatbot Games",
+                year: 2017,
+                genre: "Dungeon Crawler",
+                platforms: ["PC", "PS4/5", "Xbox", "Switch"],
+                description: "Grid-based dungeon crawler v steampunkovom prostredí, inšpirovaný klasikami.",
+                score: 78
+            },
+            {
+                id: 3,
+                title: "Way of the Hunter",
+                developer: "Nine Rocks Games",
+                year: 2022,
+                genre: "Simulation",
+                platforms: ["PC", "PS5", "Xbox X/S"],
+                description: "Autentický lovecký zážitok s rozsiahlymi otvorenými svetmi v USA a Európe.",
+                score: 70
+            },
+            {
+                id: 4,
+                title: "Vikings: Wolves of Midgard",
+                developer: "Games Farm",
+                year: 2017,
+                genre: "Action RPG",
+                platforms: ["PC", "PS4/5", "Xbox"],
+                description: "Akčné RPG zasadené do sveta severskej mytológie a Ragnaroku.",
+                score: 68
+            },
+            {
+                id: 5,
+                title: "The House of Da Vinci",
+                developer: "Blue Brain Games",
+                year: 2017,
+                genre: "Puzzle",
+                platforms: ["PC", "PS4/5", "Xbox", "Switch"],
+                description: "3D logická adventúra, kde musíte riešiť mechanické hádanky v renesančnom prostredí.",
+                score: 85
+            },
+            {
+                id: 6,
+                title: "Catie in MeowmeowLand",
+                developer: "ARTnROLL",
+                year: 2022,
+                genre: "Adventure",
+                platforms: ["PC", "PS4/5", "Xbox", "Switch"],
+                description: "Humorná point-and-click adventúra v bizarnom mačacom svete.",
+                score: 72
+            },
+            {
+                id: 7,
+                title: "Vaporum: Lockdown",
+                developer: "Fatbot Games",
+                year: 2020,
+                genre: "Dungeon Crawler",
+                platforms: ["PC", "PS4/5", "Xbox", "Switch"],
+                description: "Prequel k úspešnému dungeon crawleru Vaporum s novými gadgetmi.",
+                score: 80
+            },
+            {
+                id: 8,
+                title: "Blood will be Spilled",
+                developer: "Doublequote Studio",
+                year: 2019,
+                genre: "Platformer",
+                platforms: ["PC", "Switch"],
+                description: "Spaghetti western plošinovka s taktickými ťahovými súbojmi.",
+                score: 70
+            },
+            {
+                id: 9,
+                title: "Loria",
+                developer: "Pixelruch",
+                year: 2018,
+                genre: "RTS",
+                platforms: ["PC"],
+                description: "Klasická real-time stratégia v štýle hier z 90. rokov (Warcraft 2).",
+                score: 74
+            },
+            {
+                id: 10,
+                title: "Urtuk: The Desolation",
+                developer: "David Kaleta",
+                year: 2021,
+                genre: "Tactical RPG",
+                platforms: ["PC", "Switch"],
+                description: "Taktické ťahové RPG v otvorenom svete temnej fantasy s unikátnym vizuálom.",
+                score: 88
+            },
+            {
+                id: 11,
+                title: "Die by the Blade",
+                developer: "Triple Hill Interactive",
+                year: 2024,
+                genre: "Fighting",
+                platforms: ["PC", "PS4/5", "Xbox"],
+                description: "Bojová hra zameraná na realistický šerm, kde jeden zásah znamená smrť.",
+                score: 65
+            },
+            {
+                id: 12,
+                title: "Vivat Slovakia",
+                developer: "Team Vivat",
+                year: 2024,
+                genre: "Action",
+                platforms: ["PC"],
+                description: "Mestská akcia v otvorenom svete Bratislavy 90. rokov. (Early Access)",
+                score: 0 
+            },
+            {
+                id: 13,
+                title: "Air Missions: HIND",
+                developer: "3Division",
+                year: 2016,
+                genre: "Simulation",
+                platforms: ["PC", "PS4/5", "Xbox"],
+                description: "Letecký bojový simulátor zameraný na ruský útočný vrtuľník Mi-24 Hind.",
+                score: 68
+            },
+            {
+                id: 14,
+                title: "Workers & Resources: Soviet Republic",
+                developer: "3Division",
+                year: 2024,
+                genre: "Strategy",
+                platforms: ["PC"],
+                description: "Komplexná budovateľská stratégia mesta v reálnom čase v prostredí sovietskej éry.",
+                score: 91
+            },
+             {
+                id: 15,
+                title: "Kult: Heretic Kingdoms",
+                developer: "Games Farm",
+                year: 2004,
+                genre: "RPG",
+                platforms: ["PC"],
+                description: "Klasické RPG, ktoré odštartovalo sériu Heretic Kingdoms.",
+                score: 77
+            },
+            {
+                id: 16,
+                title: "Loot River",
+                developer: "straka.studio",
+                year: 2022,
+                genre: "Action Roguelike",
+                platforms: ["PC", "Xbox", "PS4/5"],
+                description: "Dungeon crawler s unikátnou mechanikou pohybu labyrintu pripomínajúcou Tetris.",
+                score: 76
+            },
+            {
+                id: 17,
+                title: "Juro Janosik",
+                developer: "Peter Jurkovský",
+                year: 2021,
+                genre: "Action Adventure",
+                platforms: ["PC"],
+                description: "Akčná adventúra o slovenskom legendárnom hrdinovi Jánošíkovi.",
+                score: 65
+            },
+            {
+                id: 18,
+                title: "HeistGeist",
+                developer: "Doublequote Studio",
+                year: 2025,
+                genre: "RPG",
+                platforms: ["PC"],
+                description: "Cyberpunkové RPG s kartovými súbojmi a dôrazom na príbeh. (Pripravované)",
+                score: 0
+            }
+        ];
+
+        // --- THEME LOGIC ---
+        const themeToggle = document.getElementById('theme-toggle');
+        const sunIcon = document.getElementById('sun-icon');
+        const moonIcon = document.getElementById('moon-icon');
+        const html = document.documentElement;
+
+        // Check local storage or system preference
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            html.classList.add('dark');
+            sunIcon.classList.remove('hidden');
+            moonIcon.classList.add('hidden');
+        } else {
+            html.classList.remove('dark');
+            sunIcon.classList.add('hidden');
+            moonIcon.classList.remove('hidden');
+        }
+
+        themeToggle.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            if (html.classList.contains('dark')) {
+                localStorage.setItem('theme', 'dark');
+                sunIcon.classList.remove('hidden');
+                moonIcon.classList.add('hidden');
+                updateChartsTheme(true);
+            } else {
+                localStorage.setItem('theme', 'light');
+                sunIcon.classList.add('hidden');
+                moonIcon.classList.remove('hidden');
+                updateChartsTheme(false);
+            }
+        });
+
+        // --- HELPER FUNCTIONS ---
+
+        function getPlatformIcon(platform) {
+            if (platform.includes("PC")) return "💻";
+            if (platform.includes("PS")) return "🎮";
+            if (platform.includes("Xbox")) return "❎";
+            if (platform.includes("Switch")) return "📱";
+            return "👾";
+        }
+
+        // --- CHART GENERATION & UPDATES ---
+        let platformChart, genreChart, timelineChart;
+
+        function getChartColors(isDark) {
+            return {
+                text: isDark ? '#d6d3d1' : '#78716C', // stone-300 vs stone-500
+                grid: isDark ? '#44403c' : '#e5e7eb', // stone-700 vs gray-200
+                amber: '#D97706',
+                stone: isDark ? '#57534E' : '#57534E',
+                lightAmber: isDark ? 'rgba(217, 119, 6, 0.2)' : 'rgba(217, 119, 6, 0.1)'
+            };
+        }
+
+        function updateChartsTheme(isDark) {
+            const colors = getChartColors(isDark);
+            const charts = [platformChart, genreChart, timelineChart];
+            
+            charts.forEach(chart => {
+                if (chart) {
+                    chart.options.scales.x ? chart.options.scales.x.ticks.color = colors.text : null;
+                    chart.options.scales.y ? chart.options.scales.y.ticks.color = colors.text : null;
+                    chart.options.scales.x ? chart.options.scales.x.grid.color = colors.grid : null;
+                    chart.options.scales.y ? chart.options.scales.y.grid.color = colors.grid : null;
+                    
+                    // Update specific timeline background
+                    if (chart.config.type === 'line') {
+                         chart.data.datasets[0].backgroundColor = colors.lightAmber;
+                    }
+                    chart.update();
+                }
+            });
+        }
+
+        function initCharts() {
+            const isDark = html.classList.contains('dark');
+            const colors = getChartColors(isDark);
+            
+            Chart.defaults.font.family = "'Inter', sans-serif";
+            Chart.defaults.color = colors.text;
+
+            // 1. Platform Distribution
+            const platformCounts = { "PC": 0, "PS4/5": 0, "Xbox": 0, "Switch": 0 };
+            gamesData.forEach(game => {
+                game.platforms.forEach(p => {
+                    if (p.includes("PC")) platformCounts["PC"]++;
+                    else if (p.includes("PS")) platformCounts["PS4/5"]++;
+                    else if (p.includes("Xbox")) platformCounts["Xbox"]++;
+                    else if (p.includes("Switch")) platformCounts["Switch"]++;
+                });
+            });
+
+            platformChart = new Chart(document.getElementById('platformChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(platformCounts),
+                    datasets: [{
+                        data: Object.values(platformCounts),
+                        backgroundColor: ['#D97706', '#57534E', '#A8A29E', '#F59E0B'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: colors.text } }
+                    }
+                }
+            });
+
+            // 2. Genre Distribution
+            const genreCounts = {};
+            gamesData.forEach(game => {
+                genreCounts[game.genre] = (genreCounts[game.genre] || 0) + 1;
+            });
+
+            genreChart = new Chart(document.getElementById('genreChart'), {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(genreCounts),
+                    datasets: [{
+                        label: 'Počet hier',
+                        data: Object.values(genreCounts),
+                        backgroundColor: '#D97706',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            ticks: { stepSize: 1, color: colors.text },
+                            grid: { color: colors.grid }
+                        },
+                        x: { 
+                            grid: { display: false },
+                            ticks: { color: colors.text }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // 3. Timeline
+            const yearCounts = {};
+            gamesData.forEach(game => {
+                yearCounts[game.year] = (yearCounts[game.year] || 0) + 1;
+            });
+            const years = Object.keys(yearCounts).sort();
+            const counts = years.map(y => yearCounts[y]);
+
+            timelineChart = new Chart(document.getElementById('timelineChart'), {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [{
+                        label: 'Vydané hry',
+                        data: counts,
+                        borderColor: '#D97706',
+                        backgroundColor: colors.lightAmber,
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#D97706',
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            ticks: { stepSize: 1, color: colors.text },
+                            grid: { color: colors.grid }
+                        },
+                        x: {
+                            ticks: { color: colors.text },
+                            grid: { color: colors.grid }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    const year = context.label;
+                                    const gamesInYear = gamesData.filter(g => g.year == year).map(g => g.title);
+                                    return gamesInYear.slice(0, 3).join(", ") + (gamesInYear.length > 3 ? "..." : "");
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- CATALOG LOGIC ---
+
+        function populateFilters() {
+            const genreSet = new Set(gamesData.map(g => g.genre));
+            const genreSelect = document.getElementById('genre-filter');
+            
+            Array.from(genreSet).sort().forEach(genre => {
+                const option = document.createElement('option');
+                option.value = genre;
+                option.textContent = genre;
+                genreSelect.appendChild(option);
+            });
+        }
+
+        function renderGameCards(games) {
+            const grid = document.getElementById('games-grid');
+            const noResults = document.getElementById('no-results');
+            
+            grid.innerHTML = '';
+            
+            if (games.length === 0) {
+                noResults.classList.remove('hidden');
+                return;
+            } else {
+                noResults.classList.add('hidden');
+            }
+
+            games.forEach(game => {
+                const platformsHtml = game.platforms.map(p => 
+                    `<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 mr-1 border border-stone-200 dark:border-stone-600" title="${p}">
+                        ${getPlatformIcon(p)} ${p.includes('/') ? 'PS' : (p === 'Xbox X/S' ? 'Xbox' : p)}
+                     </span>`
+                ).join('');
+
+                const isNew = game.year >= 2024;
+                const scoreDisplay = game.score > 0 
+                    ? `<div class="text-xs font-bold text-amber-600 dark:text-amber-500 flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-full">⭐ ${game.score}/100</div>` 
+                    : `<div class="text-xs font-bold text-stone-400 flex items-center gap-1 bg-stone-100 dark:bg-stone-800 px-2 py-1 rounded-full">TBA</div>`;
+
+                const card = document.createElement('div');
+                card.className = "bg-white dark:bg-stone-850 rounded-xl shadow-sm border border-stone-200 dark:border-stone-700 overflow-hidden hover:shadow-lg dark:hover:shadow-stone-900/50 hover:border-amber-300 dark:hover:border-amber-700 transition-all flex flex-col h-full group";
+                
+                // Card Content
+                card.innerHTML = `
+                    <div class="p-6 flex-grow relative">
+                        ${isNew ? '<span class="absolute top-4 right-4 h-2 w-2 rounded-full bg-red-500 animate-pulse" title="Novinka/Aktuálne"></span>' : ''}
+                        <div class="flex justify-between items-start mb-3">
+                            <span class="text-[10px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest border border-stone-200 dark:border-stone-700 px-2 py-0.5 rounded">${game.genre}</span>
+                            <span class="text-xs text-stone-400 font-mono">${game.year}</span>
+                        </div>
+                        <h4 class="text-xl font-bold text-stone-800 dark:text-stone-100 mb-1 group-hover:text-amber-600 dark:group-hover:text-amber-500 transition-colors">${game.title}</h4>
+                        <p class="text-sm font-medium text-amber-600/80 dark:text-amber-500/80 mb-4">${game.developer}</p>
+                        <p class="text-stone-600 dark:text-stone-400 text-sm leading-relaxed mb-4">${game.description}</p>
+                    </div>
+                    <div class="bg-stone-50 dark:bg-stone-800/50 px-6 py-4 border-t border-stone-100 dark:border-stone-800 flex justify-between items-center mt-auto">
+                        <div class="flex flex-wrap gap-1">
+                            ${platformsHtml}
+                        </div>
+                        ${scoreDisplay}
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterGames() {
+            const platformVal = document.getElementById('platform-filter').value;
+            const genreVal = document.getElementById('genre-filter').value;
+            const searchVal = document.getElementById('search-input').value.toLowerCase();
+            const sortVal = document.getElementById('sort-filter').value;
+
+            // Filter
+            let filtered = gamesData.filter(game => {
+                const matchesPlatform = platformVal === 'all' || game.platforms.some(p => p.includes(platformVal) || (platformVal === 'Xbox' && p.includes('Xbox')));
+                const matchesGenre = genreVal === 'all' || game.genre === genreVal;
+                const matchesSearch = game.title.toLowerCase().includes(searchVal) || game.developer.toLowerCase().includes(searchVal);
+                return matchesPlatform && matchesGenre && matchesSearch;
+            });
+
+            // Sort
+            filtered.sort((a, b) => {
+                if (sortVal === 'newest') return b.year - a.year;
+                if (sortVal === 'oldest') return a.year - b.year;
+                if (sortVal === 'rating') return b.score - a.score;
+                if (sortVal === 'name') return a.title.localeCompare(b.title);
+                return 0;
+            });
+
+            renderGameCards(filtered);
+        }
+
+        // --- CALC FUNCTIONS ---
+        function updateStats() {
+            document.getElementById('total-games-count').textContent = gamesData.length;
+            
+            // Calc average score (excluding 0s)
+            const ratedGames = gamesData.filter(g => g.score > 0);
+            const avgScore = ratedGames.reduce((acc, curr) => acc + curr.score, 0) / ratedGames.length;
+            document.getElementById('avg-score').textContent = Math.round(avgScore);
+        }
+
+
+        // --- INITIALIZATION ---
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Stats
+            updateStats();
+            
+            // 2. Initialize App
+            initCharts();
+            populateFilters();
+            // Default sort newest first
+            gamesData.sort((a, b) => b.year - a.year);
+            renderGameCards(gamesData);
+
+            // 3. Event Listeners
+            document.getElementById('platform-filter').addEventListener('change', filterGames);
+            document.getElementById('genre-filter').addEventListener('change', filterGames);
+            document.getElementById('sort-filter').addEventListener('change', filterGames);
+            document.getElementById('search-input').addEventListener('input', filterGames);
+        });
+
+    </script>
+</body>
+</html>
