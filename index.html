@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dátový Analytik - [Vaše Meno]</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* --- CSS ŠTÝLY --- */
+        :root {
+            --zse-blue: #005EB8; /* Približná ZSE modrá */
+            --zse-red: #E30613;  /* Približná ZSE červená pre akcenty */
+            --light-bg: #f4f4f4;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--light-bg);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        /* Hlavička */
+        header {
+            background-color: var(--zse-blue);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+        }
+
+        header p {
+            margin: 10px 0 0;
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        /* Hlavný obsah */
+        .container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 0 20px;
+        }
+
+        /* Sekcia: Prečo ja? */
+        .intro-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .intro-card h2 {
+            color: var(--zse-blue);
+        }
+
+        /* Sekcia: Ukážka dát (Graf) */
+        .chart-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 1000px;
+        }
+
+        /* Zručnosti */
+        .skills {
+            display: flex;
+            justify_content: center;
+            gap: 15px;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .skill-tag {
+            background-color: var(--zse-red);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        /* Pätička */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            margin-top: 2rem;
+            background-color: #333;
+            color: white;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Dátový Analytik</h1>
+        <p>Pán Katerinka | Kandidát pre ZSE</p>
+    </header>
+
+    <div class="container">
+        <div class="intro-card">
+            <h2>Premieňam dáta na energiu pre biznis</h2>
+            <p>
+                Dobrý deň, som nadšený z možnosti pridať sa k tímu strategických a dátových analýz.
+                Moja práca spočíva v hľadaní vzorcov tam, kde iní vidia len čísla.
+            </p>
+            <div class="skills">
+                <span class="skill-tag">SQL</span>
+                <span class="skill-tag">Python</span>
+                <span class="skill-tag">Vizualizácia dát</span>
+                <span class="skill-tag">Strategická analýza</span>
+            </div>
+        </div>
+
+        <div class="chart-section">
+            <h2>Ukážka analytického myslenia</h2>
+            <p>Modelová vizualizácia: <em>Optimalizácia distribúcie záťaže v čase</em></p>
+            <div>
+                <canvas id="energyChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Vytvorené špeciálne pre pohovor v ZSE | 23.1.2026</p>
+    </footer>
+
+    <script>
+        // --- JAVASCRIPT LOGIKA ---
+        
+        // Získanie kontextu pre graf
+        const ctx = document.getElementById('energyChart').getContext('2d');
+
+        // Vytvorenie grafu
+        const energyChart = new Chart(ctx, {
+            type: 'line', // Typ grafu: Čiarový
+            data: {
+                // Časová os (hodiny dňa)
+                labels: ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00', '24:00'],
+                datasets: [
+                    {
+                        label: 'Štandardná spotreba (kWh)',
+                        data: [120, 100, 150, 280, 300, 290, 350, 320, 200],
+                        borderColor: '#E30613', // Červená (ZSE akcent)
+                        backgroundColor: 'rgba(227, 6, 19, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4 // Hladké krivky
+                    },
+                    {
+                        label: 'Optimalizovaná spotreba (Model)',
+                        data: [140, 130, 160, 240, 250, 250, 260, 240, 180],
+                        borderColor: '#005EB8', // Modrá (ZSE hlavná)
+                        backgroundColor: 'rgba(0, 94, 184, 0.1)',
+                        borderWidth: 3,
+                        borderDash: [5, 5], // Prerušovaná čiara pre model
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Záťaž siete'
+                        }
+                    }
+                },
+                animation: {
+                    duration: 2000, // Animácia pri načítaní (efekt na pohovore)
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
+    </script>
+</body>
+</html>
