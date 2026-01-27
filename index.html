@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytický Dashboard - Energetika</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* ZSE Brand Colors: Orange #FF6600, Dark Blue #003366 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #003366; /* ZSE Blue */
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 5px solid #FF6600; /* ZSE Orange accent */
+        }
+
+        h1 { margin: 0; font-size: 24px; }
+        .author { font-size: 14px; opacity: 0.9; text-align: right; }
+        .author strong { display: block; font-size: 18px; color: #FF6600; }
+
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+
+        .summary-cards {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            flex: 1;
+        }
+
+        .card h3 { margin-top: 0; color: #003366; font-size: 16px; }
+        .card .value { font-size: 28px; font-weight: bold; color: #FF6600; }
+        .card .desc { font-size: 12px; color: #666; margin-top: 5px; }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr; /* 2 tretiny pre veľký graf, 1 tretina pre malý */
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .text-section {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        .text-section h2 { color: #003366; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .tech-stack span {
+            background-color: #e0e0e0;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .charts-grid, .summary-cards { flex-direction: column; grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div>
+            <h1>Energetický Analytický Prehľad</h1>
+            <span style="font-size: 12px; opacity: 0.8;">Interná analýza distribučnej siete (Demo)</span>
+        </div>
+        <div class="author">
+            Analýzu pripravil:
+            <strong>[TVOJE MENO]</strong>
+            Dátový Analytik Candidate
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="summary-cards">
+            <div class="card">
+                <h3>Celkový Odber (YTD)</h3>
+                <div class="value">4 520 GWh</div>
+                <div class="desc">Medziročný nárast +2.4%</div>
+            </div>
+            <div class="card">
+                <h3>SAIDI (Priemer)</h3>
+                <div class="value">42.5 min</div>
+                <div class="desc">System Average Interruption Duration Index</div>
+            </div>
+            <div class="card">
+                <h3>Úspešnosť ETL</h3>
+                <div class="value">99.9%</div>
+                <div class="desc">SQL Data Pipeline Integrity</div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-container">
+                <canvas id="loadChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="outageChart"></canvas>
+            </div>
+        </div>
+
+        <div class="text-section">
+            <h2>Metodika spracovania dát a technická implementácia</h2>
+            <p>
+                Predkladaná analýza sa zameriava na identifikáciu vzorcov v spotrebe elektrickej energie v regióne západného Slovenska.
+                Dáta boli extrahované z centrálneho dátového skladu pomocou <strong>PL/SQL procedúr</strong>, pričom dôraz bol kladený na 
+                optimalizáciu dotazov pre spracovanie veľkého objemu telemetrických údajov (Smart Metering).
+            </p>
+            <p>
+                <strong>Dátový model a transformácia:</strong>
+                Surové dáta prechádzajú čistiacim procesom, kde sú odfiltrované anomálie spôsobené chybami prenosu. 
+                Následne sú agregované do 15-minútových intervalov pre potreby presného predikovania záťaže (Load Forecasting).
+                Pre vizualizáciu v nástroji <strong>Power BI</strong> (resp. v tomto webovom dashboarde) boli vypočítané kľúčové metriky 
+                ako SAIDI (priemerná dĺžka prerušenia distribúcie) a SAIFI (priemerná frekvencia prerušenia).
+            </p>
+            <p>
+                <strong>Identifikované trendy:</strong>
+                Ako vidieť na čiarovom grafe, večerná špička (medzi 18:00 a 21:00) vykazuje rastúci trend, čo koreluje s nárastom 
+                využívania elektromobility v rezidenčných zónach. Koláčový graf "Príčiny výpadkov" jasne indikuje, že externé vplyvy 
+                (počasie) tvoria majoritnú časť neplánovaných udalostí, čo je kľúčový vstup pre plánovanie investícií do odolnosti kabeláže.
+            </p>
+            <div class="tech-stack" style="margin-top: 20px;">
+                Technológie: 
+                <span>SQL / T-SQL</span>
+                <span>Power BI</span>
+                <span>Python (Pandas)</span>
+                <span>Data Warehousing</span>
+                <span>Predictive Analysis</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Konfigurácia grafu 1: Priebeh záťaže (Line Chart)
+        const ctx1 = document.getElementById('loadChart').getContext('2d');
+        const loadChart = new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00', '23:59'],
+                datasets: [{
+                    label: 'Aktuálna záťaž siete (MW)',
+                    data: [120, 95, 150, 280, 310, 290, 410, 380, 200],
+                    borderColor: '#FF6600', // ZSE Orange
+                    backgroundColor: 'rgba(255, 102, 0, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4, // Hladké krivky
+                    fill: true
+                },
+                {
+                    label: 'Predikcia (Historický priemer)',
+                    data: [115, 90, 140, 260, 290, 280, 390, 360, 190],
+                    borderColor: '#003366', // ZSE Blue
+                    borderWidth: 2,
+                    borderDash: [5, 5], // Prerušovaná čiara
+                    tension: 0.4,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: { display: true, text: 'Denný profil zaťaženia siete (Porovnanie s predikciou)' },
+                    legend: { position: 'top' }
+                },
+                scales: {
+                    y: { title: { display: true, text: 'Výkon (MW)' } }
+                }
+            }
+        });
+
+        // Konfigurácia grafu 2: Príčiny výpadkov (Doughnut Chart)
+        const ctx2 = document.getElementById('outageChart').getContext('2d');
+        const outageChart = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: ['Počasie / Externé vplyvy', 'Technická porucha', 'Plánovaná údržba', 'Tretia strana'],
+                datasets: [{
+                    data: [45, 25, 20, 10],
+                    backgroundColor: [
+                        '#003366', // Dark Blue
+                        '#FF6600', // Orange
+                        '#3399CC', // Light Blue
+                        '#CCCCCC'  // Grey
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: { display: true, text: 'Analýza príčin prerušenia distribúcie' },
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
