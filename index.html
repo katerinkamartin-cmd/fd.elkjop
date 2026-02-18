@@ -1,0 +1,446 @@
+import React, { useState } from 'react';
+import { 
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell 
+} from 'recharts';
+import { 
+  LayoutDashboard, TrendingUp, Package, Users, Settings, 
+  ChevronDown, Bell, Search, Menu, Download, Filter, 
+  MapPin, Truck, AlertCircle, CheckCircle 
+} from 'lucide-react';
+
+// --- MOCK DATA FOR ELKJØP CONTEXT ---
+
+const salesTrendData = [
+  { month: 'Jan', revenue: 4200, target: 4000, margin: 18 },
+  { month: 'Feb', revenue: 3800, target: 3900, margin: 17 },
+  { month: 'Mar', revenue: 4500, target: 4200, margin: 19 },
+  { month: 'Apr', revenue: 4100, target: 4100, margin: 18 },
+  { month: 'May', revenue: 4800, target: 4600, margin: 20 },
+  { month: 'Jun', revenue: 5200, target: 5000, margin: 21 },
+  { month: 'Jul', revenue: 4900, target: 4800, margin: 19 },
+  { month: 'Aug', revenue: 5100, target: 5000, margin: 20 },
+  { month: 'Sep', revenue: 5600, target: 5400, margin: 22 },
+  { month: 'Oct', revenue: 5400, target: 5300, margin: 21 },
+  { month: 'Nov', revenue: 8500, target: 7000, margin: 25 }, // Black Friday peak
+  { month: 'Dec', revenue: 9200, target: 8500, margin: 24 }, // Christmas peak
+];
+
+const categoryData = [
+  { name: 'TV & Audio', value: 35, color: '#0056b3' },
+  { name: 'Home Appliances', value: 25, color: '#00a8e8' },
+  { name: 'Computing & Gaming', value: 20, color: '#007ea7' },
+  { name: 'Smartphones', value: 15, color: '#003459' },
+  { name: 'Small Appliances', value: 5, color: '#90e0ef' },
+];
+
+const regionPerformance = [
+  { region: 'Norway (NO)', sales: 120, growth: 5.2 },
+  { region: 'Sweden (SE)', sales: 98, growth: 3.8 },
+  { region: 'Denmark (DK)', sales: 86, growth: 4.1 },
+  { region: 'Finland (FI)', sales: 72, growth: 6.5 },
+];
+
+const logisticsData = [
+  { day: 'Mon', inTransit: 1450, delivered: 1200, delayed: 45 },
+  { day: 'Tue', inTransit: 1500, delivered: 1350, delayed: 30 },
+  { day: 'Wed', inTransit: 1600, delivered: 1400, delayed: 55 },
+  { day: 'Thu', inTransit: 1550, delivered: 1480, delayed: 25 },
+  { day: 'Fri', inTransit: 1700, delivered: 1600, delayed: 40 },
+  { day: 'Sat', inTransit: 1200, delivered: 1100, delayed: 15 },
+  { day: 'Sun', inTransit: 800, delivered: 750, delayed: 10 },
+];
+
+const warehouseCapacity = [
+  { name: 'Oslo Hub', capacity: 85 },
+  { name: 'Jönköping Hub', capacity: 92 },
+  { name: 'Brno (Central)', capacity: 78 },
+  { name: 'Helsinki Local', capacity: 65 },
+];
+
+// --- COMPONENTS ---
+
+const KPICard = ({ title, value, trend, trendValue, icon: Icon, colorClass }) => (
+  <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+    <div className="flex justify-between items-start">
+      <div>
+        <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
+        <h3 className="text-2xl font-bold text-slate-800">{value}</h3>
+      </div>
+      <div className={`p-3 rounded-lg ${colorClass} bg-opacity-10`}>
+        <Icon className={`w-6 h-6 ${colorClass.replace('bg-', 'text-')}`} />
+      </div>
+    </div>
+    <div className="mt-4 flex items-center text-sm">
+      <span className={`font-medium ${trend === 'up' ? 'text-green-600' : 'text-red-600'} flex items-center`}>
+        {trend === 'up' ? '+' : ''}{trendValue}%
+        {trend === 'up' ? <TrendingUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />}
+      </span>
+      <span className="text-slate-400 ml-2">vs last month</span>
+    </div>
+  </div>
+);
+
+const SidebarItem = ({ icon: Icon, label, active, onClick }) => (
+  <button
+    onClick={onClick}
+    className={`w-full flex items-center space-x-3 px-6 py-3 transition-colors duration-200 border-l-4 ${
+      active 
+        ? 'bg-blue-50 border-blue-600 text-blue-700' 
+        : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+    }`}
+  >
+    <Icon className="w-5 h-5" />
+    <span className="font-medium">{label}</span>
+  </button>
+);
+
+const SectionHeader = ({ title, subtitle }) => (
+  <div className="mb-6 flex justify-between items-end">
+    <div>
+      <h2 className="text-2xl font-bold text-slate-800">{title}</h2>
+      <p className="text-slate-500 mt-1">{subtitle}</p>
+    </div>
+    <div className="flex space-x-2">
+      <button className="flex items-center space-x-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
+        <Filter className="w-4 h-4" />
+        <span>Filter</span>
+      </button>
+      <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 shadow-sm">
+        <Download className="w-4 h-4" />
+        <span>Export Report</span>
+      </button>
+    </div>
+  </div>
+);
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // --- VIEWS ---
+
+  const renderDashboard = () => (
+    <div className="space-y-6 animate-fade-in">
+      <SectionHeader title="Executive Summary" subtitle="Consolidated Performance for Nordic Region" />
+      
+      {/* KPI Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <KPICard title="Total Revenue (YTD)" value="€124.5M" trend="up" trendValue="12.4" icon={TrendingUp} colorClass="text-blue-600 bg-blue-600" />
+        <KPICard title="Average Margin" value="21.8%" trend="up" trendValue="0.8" icon={Settings} colorClass="text-green-600 bg-green-600" />
+        <KPICard title="Online Orders" value="45,230" trend="up" trendValue="5.2" icon={Package} colorClass="text-purple-600 bg-purple-600" />
+        <KPICard title="NPS Score" value="72" trend="down" trendValue="1.5" icon={Users} colorClass="text-orange-500 bg-orange-500" />
+      </div>
+
+      {/* Main Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Revenue Trend - Big Chart */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+          <h3 className="text-lg font-bold text-slate-800 mb-6">Revenue Trend vs Budget (2024-2025)</h3>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={salesTrendData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#2563eb" stopOpacity={0.1}/>
+                    <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill: '#64748b'}} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b'}} />
+                <RechartsTooltip 
+                  contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }}
+                  itemStyle={{ color: '#fff' }}
+                />
+                <Legend />
+                <Area type="monotone" dataKey="revenue" stroke="#2563eb" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" name="Actual Revenue" />
+                <Line type="monotone" dataKey="target" stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Budget Target" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Category Distribution */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+          <h3 className="text-lg font-bold text-slate-800 mb-6">Category Mix</h3>
+          <div className="h-80 relative">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={categoryData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {categoryData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <RechartsTooltip />
+                <Legend layout="horizontal" verticalAlign="bottom" align="center" />
+              </PieChart>
+            </ResponsiveContainer>
+            {/* Center Text */}
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-full text-center">
+              <span className="text-3xl font-bold text-slate-800">5</span>
+              <p className="text-xs text-slate-500">Key<br/>Divisions</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Region Performance */}
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+        <h3 className="text-lg font-bold text-slate-800 mb-6">Regional Performance (Nordics)</h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {regionPerformance.map((region, idx) => (
+            <div key={idx} className="p-4 bg-slate-50 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-semibold text-slate-700">{region.region}</span>
+                <MapPin className="w-4 h-4 text-slate-400" />
+              </div>
+              <div className="text-2xl font-bold text-blue-900 mb-1">€{region.sales}M</div>
+              <div className="text-sm text-green-600 font-medium">+{region.growth}% YoY</div>
+              {/* Simple progress bar */}
+              <div className="w-full bg-slate-200 h-1.5 rounded-full mt-3">
+                <div 
+                  className="bg-blue-600 h-1.5 rounded-full" 
+                  style={{ width: `${(region.sales / 120) * 100}%` }}
+                ></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderLogistics = () => (
+    <div className="space-y-6 animate-fade-in">
+      <SectionHeader title="Logistics & Supply Chain" subtitle="Stock Flow Optimization & Warehouse Capacity" />
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 md:col-span-2">
+          <h3 className="text-lg font-bold text-slate-800 mb-6">Delivery Performance (Last 7 Days)</h3>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={logisticsData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="day" axisLine={false} tickLine={false} />
+                <YAxis axisLine={false} tickLine={false} />
+                <RechartsTooltip cursor={{fill: 'transparent'}} />
+                <Legend />
+                <Bar dataKey="delivered" name="On Time" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="delayed" name="Delayed" fill="#ef4444" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+          <h3 className="text-lg font-bold text-slate-800 mb-4">Warehouse Capacity Utilization</h3>
+          <div className="space-y-6">
+            {warehouseCapacity.map((hub, idx) => (
+              <div key={idx}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="font-medium text-slate-700">{hub.name}</span>
+                  <span className={`${hub.capacity > 90 ? 'text-red-600' : 'text-slate-500'}`}>{hub.capacity}%</span>
+                </div>
+                <div className="w-full bg-slate-100 h-2 rounded-full">
+                  <div 
+                    className={`h-2 rounded-full transition-all duration-1000 ${
+                      hub.capacity > 90 ? 'bg-red-500' : hub.capacity > 75 ? 'bg-amber-500' : 'bg-green-500'
+                    }`}
+                    style={{ width: `${hub.capacity}%` }}
+                  ></div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-100">
+            <div className="flex items-start space-x-3">
+              <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-bold text-blue-800">BI Insight</h4>
+                <p className="text-xs text-blue-600 mt-1">
+                  Jönköping Hub is reaching critical capacity. Recommendation: Reroute 15% of QLED TV inventory to the Brno Central Hub to optimize for the holiday season.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderAbout = () => (
+    <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden animate-fade-in">
+      <div className="bg-gradient-to-r from-blue-900 to-blue-800 p-10 text-white">
+        <h2 className="text-3xl font-bold mb-2">Martin Katerinka</h2>
+        <p className="text-blue-100 text-lg">BI Developer Candidate</p>
+      </div>
+      <div className="p-10 space-y-8">
+        <div>
+          <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center">
+            <Settings className="w-5 h-5 mr-2 text-blue-600" />
+            About Me & Motivation
+          </h3>
+          <p className="text-slate-600 leading-relaxed">
+            I am a data enthusiast with a passion for transforming raw numbers into strategic decisions.
+            My goal for Elkjøp is to build robust data models and dashboards that help optimize the supply chain
+            and increase sales margins across the Nordic region.
+            This dashboard is a demonstration of my ability not only to analyze data but also to present it effectively.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800 mb-4">Technical Stack</h3>
+            <ul className="space-y-3">
+              {[
+                { skill: 'SQL & Data Warehousing', level: 95 },
+                { skill: 'Power BI / Tableau', level: 90 },
+                { skill: 'Python (Pandas, NumPy)', level: 85 },
+                { skill: 'ETL Processes (SSIS, Azure)', level: 80 },
+                { skill: 'Web Technologies (React, D3.js)', level: 75 },
+              ].map((item, idx) => (
+                <li key={idx}>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="font-medium text-slate-700">{item.skill}</span>
+                    <span className="text-slate-500">{item.level}%</span>
+                  </div>
+                  <div className="w-full bg-slate-100 h-2 rounded-full">
+                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${item.level}%` }}></div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+          
+          <div>
+            <h3 className="text-lg font-bold text-slate-800 mb-4">Experience & Projects</h3>
+            <div className="space-y-4">
+              <div className="flex items-start space-x-3">
+                <CheckCircle className="w-5 h-5 text-green-500 mt-1" />
+                <div>
+                  <h4 className="font-bold text-slate-800">Logistics Optimization</h4>
+                  <p className="text-sm text-slate-600">Created a predictive model for inventory stock, reducing "out-of-stock" incidents by 12%.</p>
+                </div>
+              </div>
+              <div className="flex items-start space-x-3">
+                <CheckCircle className="w-5 h-5 text-green-500 mt-1" />
+                <div>
+                  <h4 className="font-bold text-slate-800">Sales Dashboarding</h4>
+                  <p className="text-sm text-slate-600">Automated management reporting, saving over 20 hours of manual work per month.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
+      
+      {/* SIDEBAR */}
+      <aside 
+        className={`bg-white border-r border-slate-200 fixed lg:static inset-y-0 left-0 z-50 w-64 transform transition-transform duration-200 ease-in-out ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0 lg:w-20'
+        }`}
+      >
+        <div className="h-16 flex items-center justify-center border-b border-slate-200">
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-blue-900 rounded-lg flex items-center justify-center text-white font-bold text-xl">E</div>
+            {sidebarOpen && <span className="text-xl font-bold text-blue-900 tracking-tight">ELKJØP <span className="text-slate-400 font-normal">BI</span></span>}
+          </div>
+        </div>
+
+        <nav className="mt-8 space-y-1">
+          <SidebarItem 
+            icon={LayoutDashboard} 
+            label={sidebarOpen ? "Dashboard" : ""} 
+            active={activeTab === 'dashboard'} 
+            onClick={() => setActiveTab('dashboard')} 
+          />
+          <SidebarItem 
+            icon={Truck} 
+            label={sidebarOpen ? "Logistics" : ""} 
+            active={activeTab === 'logistics'} 
+            onClick={() => setActiveTab('logistics')} 
+          />
+          <SidebarItem 
+            icon={Users} 
+            label={sidebarOpen ? "Customers" : ""} 
+            active={activeTab === 'customers'} 
+            onClick={() => setActiveTab('customers')} 
+          />
+           <div className="pt-8 pb-2">
+            <p className="px-6 text-xs font-semibold text-slate-400 uppercase tracking-wider">{sidebarOpen ? 'Candidate' : '...'}</p>
+          </div>
+          <SidebarItem 
+            icon={Settings} 
+            label={sidebarOpen ? "Profile: M. Katerinka" : ""} 
+            active={activeTab === 'about'} 
+            onClick={() => setActiveTab('about')} 
+          />
+        </nav>
+      </aside>
+
+      {/* MAIN CONTENT */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        
+        {/* TOPBAR */}
+        <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-8 shadow-sm">
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden text-slate-500 hover:text-slate-700">
+            <Menu className="w-6 h-6" />
+          </button>
+
+          <div className="flex items-center bg-slate-100 rounded-lg px-3 py-1.5 w-full max-w-md mx-4">
+            <Search className="w-4 h-4 text-slate-400 mr-2" />
+            <input 
+              type="text" 
+              placeholder="Search reports, SKU or KPIs..." 
+              className="bg-transparent border-none text-sm focus:outline-none w-full text-slate-600 placeholder-slate-400"
+            />
+          </div>
+
+          <div className="flex items-center space-x-6">
+            <button className="relative text-slate-400 hover:text-slate-600">
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
+            </button>
+            
+            <div className="flex items-center space-x-3 pl-6 border-l border-slate-200">
+              <div className="text-right hidden md:block">
+                <p className="text-sm font-bold text-slate-800">Martin Katerinka</p>
+                <p className="text-xs text-slate-500">BI Developer Applicant</p>
+              </div>
+              <div className="h-9 w-9 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold border border-blue-200">
+                MK
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* SCROLLABLE CONTENT */}
+        <main className="flex-1 overflow-auto p-8">
+          {activeTab === 'dashboard' && renderDashboard()}
+          {activeTab === 'logistics' && renderLogistics()}
+          {activeTab === 'about' && renderAbout()}
+          {activeTab === 'customers' && (
+             <div className="flex flex-col items-center justify-center h-full text-slate-400 animate-fade-in">
+                <Users className="w-16 h-16 mb-4 opacity-20" />
+                <h3 className="text-lg font-medium">Customer Analysis</h3>
+                <p>This module would be implemented in the next phase after hiring :)</p>
+             </div>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}
